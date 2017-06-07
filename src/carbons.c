@@ -248,6 +248,15 @@ static PurpleCmdRet carbons_cmd_func(PurpleConversation * conv_p,
   return PURPLE_CMD_RET_OK;
 }
 
+/**
+ * Register signal handler (needs to be done once libpurple has been fully initialised).
+ */
+static void carbons_register_signals(PurplePlugin * plugin_p)
+{
+  (void) purple_signal_connect(purple_accounts_get_handle(), "account-signed-on", plugin_p, PURPLE_CALLBACK(carbons_account_connect_cb), NULL);
+  (void) purple_signal_connect_priority(purple_plugins_find_with_id("prpl-jabber"), "jabber-receiving-xmlnode", plugin_p, PURPLE_CALLBACK(carbons_xml_received_cb), NULL, PURPLE_PRIORITY_LOWEST + 100);
+}
+
 static gboolean
 carbons_plugin_load(PurplePlugin * plugin_p) {
 
@@ -263,8 +272,7 @@ carbons_plugin_load(PurplePlugin * plugin_p) {
                                      "Turns Message Carbons on or off for the calling account.",
                                      (void *) 0);
 
-  (void) purple_signal_connect(purple_accounts_get_handle(), "account-signed-on", plugin_p, PURPLE_CALLBACK(carbons_account_connect_cb), NULL);
-  (void) purple_signal_connect_priority(purple_plugins_find_with_id("prpl-jabber"), "jabber-receiving-xmlnode", plugin_p, PURPLE_CALLBACK(carbons_xml_received_cb), NULL, PURPLE_PRIORITY_LOWEST + 100);
+  carbons_register_signals(plugin_p);
 
   return TRUE;
 }
@@ -308,6 +316,13 @@ carbons_plugin_init(PurplePlugin * plugin_p)
   PurplePluginInfo * info_p = plugin_p->info;
 
   info_p->dependencies = g_list_prepend(info_p->dependencies, "prpl-jabber");
+}
+
+void carbons_plugin_register_signals()
+{
+  purple_debug_misc("carbons", "%s\n", __func__);
+  PurplePlugin * plugin_p = purple_plugins_find_with_id(info.id);
+  carbons_register_signals(plugin_p);
 }
 
 PURPLE_INIT_PLUGIN(carbons, carbons_plugin_init, info)
